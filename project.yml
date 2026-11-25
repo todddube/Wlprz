@@ -1,0 +1,105 @@
+name: Wlprz
+
+options:
+  bundleIdPrefix: com.todddube
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  xcodeVersion: "27.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    # --- Language -------------------------------------------------------
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor   # app code is UI code; Domain opts out
+    SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES
+
+    # --- Platform -------------------------------------------------------
+    # Apple silicon only: scenes are Metal shaders
+    # tuned for unified memory, and we don't test on Intel.
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    ARCHS: arm64
+    SDKROOT: macosx
+
+    # --- Hygiene --------------------------------------------------------
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+
+    # --- Versioning -----------------------------------------------------
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      ENABLE_TESTABILITY: YES
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      SWIFT_COMPILATION_MODE: wholemodule
+
+targets:
+  Wlprz:
+    type: application
+    platform: macOS
+    sources:
+      - path: Wlprz
+        excludes: ["**/.DS_Store"]
+    settings:
+      base:
+        PRODUCT_NAME: Wlprz
+        PRODUCT_BUNDLE_IDENTIFIER: com.todddube.Wlprz
+        INFOPLIST_FILE: Wlprz/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Wlprz/Resources/Wlprz.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        LD_RUNPATH_SEARCH_PATHS: ["$(inherited)", "@executable_path/../Frameworks"]
+      configs:
+        # Ad-hoc signed in Debug so the sandbox is live during development.
+        Debug:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: "-"
+          DEVELOPMENT_TEAM: ""
+        Release:
+          CODE_SIGN_STYLE: Automatic
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+
+  WlprzTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: WlprzTests
+    dependencies:
+      - target: Wlprz
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.todddube.WlprzTests
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Wlprz.app/Contents/MacOS/Wlprz"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+
+schemes:
+  Wlprz:
+    build:
+      targets:
+        Wlprz: all
+        WlprzTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - WlprzTests
+    archive:
+      config: Release

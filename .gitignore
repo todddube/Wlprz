@@ -1,0 +1,8 @@
+.DS_Store
+build/
+xcuserdata/
+*.xcuserstate
+Wlprz [0-9]*.xcodeproj
+Wlprz.xcodeproj/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

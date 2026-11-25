@@ -1,0 +1,95 @@
+//
+//  Wallpaper.swift
+//  Wlprz · Wlprz
+//
+//  The wallpaper value type: what can be shown on a desktop and how it is described.
+//
+
+import Foundation
+
+/// A single item in the library: a video, an image, or a built-in shader scene.
+nonisolated struct Wallpaper: Codable, Hashable, Identifiable, Sendable {
+    /// Where the pixels come from.
+    enum Kind: Codable, Hashable, Sendable {
+        /// A video file stored in the library folder, by file name.
+        case video(fileName: String)
+        /// An image file stored in the library folder, by file name.
+        case image(fileName: String)
+        /// A built-in Metal shader scene.
+        case scene(SceneID)
+
+        var isAnimated: Bool {
+            if case .image = self { return false }
+            return true
+        }
+
+        /// The library file backing this wallpaper, if it has one.
+        var fileName: String? {
+            switch self {
+            case .video(let name), .image(let name): name
+            case .scene: nil
+            }
+        }
+    }
+
+    /// How much visible movement the wallpaper has; used as a library filter.
+    enum Motion: String, Codable, CaseIterable, Sendable {
+        case still, slow, medium, dynamic
+
+        var label: String { rawValue.capitalized }
+    }
+
+    /// The rough GPU/CPU cost of showing the wallpaper.
+    enum Energy: String, Codable, CaseIterable, Sendable {
+        case efficient, balanced, intensive
+
+        var label: String { rawValue.capitalized }
+    }
+
+    var id: UUID
+    var title: String
+    var kind: Kind
+    var tags: [String]
+    var isFavorite: Bool
+    var motion: Motion
+    var energy: Energy
+    var dateAdded: Date
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        kind: Kind,
+        tags: [String] = [],
+        isFavorite: Bool = false,
+        motion: Motion = .slow,
+        energy: Energy = .balanced,
+        dateAdded: Date = .now
+    ) {
+        self.id = id
+        self.title = title
+        self.kind = kind
+        self.tags = tags
+        self.isFavorite = isFavorite
+        self.motion = motion
+        self.energy = energy
+        self.dateAdded = dateAdded
+    }
+
+    var isScene: Bool {
+        if case .scene = kind { return true }
+        return false
+    }
+
+    /// Case-insensitive match against the title and tags; an empty query matches everything.
+    func matches(query: String) -> Bool {
+        let needle = query.trimmingCharacters(in: .whitespaces)
+        guard !needle.isEmpty else { return true }
+        return title.localizedCaseInsensitiveContains(needle)
+            || tags.contains { $0.localizedCaseInsensitiveContains(needle) }
+    }
+}
+
+/// Identifies one of the shader scenes compiled into the app.
+nonisolated enum SceneID: String, Codable, CaseIterable, Sendable {
+    case aurora, nebula, orbs, constellation, duskWaves
+}
