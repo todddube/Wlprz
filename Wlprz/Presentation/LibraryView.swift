@@ -221,6 +221,10 @@ struct LibraryView: View {
                 Label("Import", systemImage: "plus")
             }
             .help("Create a wallpaper from a video or image")
+            SettingsLink {
+                Label("Settings", systemImage: "gearshape")
+            }
+            .help("Wlprz Settings")
         }
     }
 }

@@ -34,7 +34,10 @@ settings:
     DEAD_CODE_STRIPPING: YES
 
     # --- Versioning -----------------------------------------------------
-    MARKETING_VERSION: "1.0.0"
+    # MARKETING_VERSION is the one place the version lives (`make set-version V=…`).
+    # The build number is the git commit count, passed in by the Makefile; "1" is only
+    # the fallback for builds started from Xcode.
+    MARKETING_VERSION: "0.5.0"
     CURRENT_PROJECT_VERSION: "1"
 
   configs:

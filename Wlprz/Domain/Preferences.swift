@@ -62,6 +62,8 @@ nonisolated struct Preferences: Codable, Hashable, Sendable {
 
     // General
     var syncSystemWallpaper = true
+    /// Adds a Dock icon, for when a crowded menu bar hides the menu bar icon behind the notch.
+    var showsDockIcon = false
 
     // Playback
     var performance: PerformanceMode = .automatic
@@ -96,6 +98,7 @@ nonisolated struct Preferences: Codable, Hashable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = Preferences()
         syncSystemWallpaper = try c.decodeIfPresent(Bool.self, forKey: .syncSystemWallpaper) ?? d.syncSystemWallpaper
+        showsDockIcon = try c.decodeIfPresent(Bool.self, forKey: .showsDockIcon) ?? d.showsDockIcon
         performance = try c.decodeIfPresent(PerformanceMode.self, forKey: .performance) ?? d.performance
         pauseOnBattery = try c.decodeIfPresent(Bool.self, forKey: .pauseOnBattery) ?? d.pauseOnBattery
         pauseInLowPowerMode = try c.decodeIfPresent(Bool.self, forKey: .pauseInLowPowerMode) ?? d.pauseInLowPowerMode

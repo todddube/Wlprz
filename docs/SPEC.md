@@ -102,8 +102,15 @@ apps, alpha > 0) rasterised onto a coarse grid per display (handles overlap), sa
 every 2 s and immediately on app activation changes.
 
 ### 2.7 System integration
-- **Menu bar extra**: now-playing per display, Pause/Resume, Next, Open Library,
-  Settings, Quit.
+- **Menu bar extra** (always present while running; the app has no Dock icon by default):
+  now-playing per display, Pause/Resume, Next, Open Library, Settings, About, Quit, and
+  the version and build. The icon changes while playback is paused.
+- **Ways back in** when the menu bar icon is hidden (camera notch, or a menu bar manager
+  like Bartender): launching Wlprz again opens the library; the library toolbar has a
+  Settings button; Settings → General → "Show Wlprz in the Dock".
+- **About** (own window and a Settings tab): icon, name, "Version X (build)", summary,
+  links to the GitHub repo, its README and Issues, requirements, copyright. All values come
+  from Info.plist.
 - **Sync macOS wallpaper** (default on): writes a full-resolution still of the current
   wallpaper and sets it as the system desktop picture for that display → matching Lock
   Screen and a seamless desktop after quit. One still is extracted per video and shared by
@@ -118,7 +125,8 @@ every 2 s and immediately on app activation changes.
   Playlist.
 
 ### 2.8 Settings
-- General: Launch at login, Sync macOS wallpaper.
+- General: Launch at login, Show in Dock, Sync macOS wallpaper.
+- About: as above.
 - Playback: Performance mode, Desktop motion (Animated / Still), Pause on battery, Pause
   in Low Power Mode, Desktop playback (Always / When exposed), Audio (mute + volume), HDR.
 - Displays: Mirror vs per display; the mirror source, or per-display enable + source
@@ -155,3 +163,11 @@ docs/TRACKER.md   Feature status and work plan
 Rules: `Domain` imports Foundation only and is fully unit-tested. All UI state is
 `@MainActor` (default isolation). Platform: macOS 26+, Apple silicon, sandboxed with
 user-selected read-only file access.
+
+### Versioning
+- **Version** (`CFBundleShortVersionString`): `MARKETING_VERSION` in `project.yml`, the
+  only place it's set. Change it with `make set-version V=0.5.1`. Current: **0.5.0**.
+- **Build** (`CFBundleVersion`): the git commit count, passed in by every `make` build,
+  test and release. It grows with each commit on `main`; `make release` refuses a dirty
+  tree. Builds started from Xcode fall back to 1.
+- `make version` prints both. The repository URL is `WlprzRepositoryURL` in Info.plist.

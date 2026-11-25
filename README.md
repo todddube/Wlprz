@@ -3,6 +3,19 @@
 Live wallpapers for macOS: videos, images and interactive GPU shader scenes on your
 desktop, per display, with playlists, schedules and battery-aware playback.
 
+**Version 0.5.0** · macOS 26+ · Apple silicon
+
+## Using it
+Wlprz is a menu bar app: look for its icon in the menu bar (no Dock icon by default).
+From there you get Pause, Next, each display's wallpaper, the Library, Settings and About.
+
+Can't see the icon? A crowded menu bar can hide it behind the camera notch, and menu bar
+managers such as Bartender hide new items. Either way:
+- open Wlprz again from Finder or Spotlight to bring up the Library, which has a
+  Settings button in its toolbar;
+- turn on **Settings → General → Show Wlprz in the Dock**;
+- or allow it to show in your menu bar manager.
+
 See [docs/SPEC.md](docs/SPEC.md) for the full spec and design principles, and
 [docs/TRACKER.md](docs/TRACKER.md) for feature status.
 
@@ -43,7 +56,12 @@ make build   # generate project + Debug build
 make test    # swift-testing suites: policy, rotation, persistence, coverage, engine
 make run     # build and launch
 make icon    # redraw the app icon
+make version              # print version and build
+make set-version V=0.5.1   # change the version (project.yml is the single source)
 ```
+
+The version lives only in `project.yml` (`MARKETING_VERSION`); the build number is the
+git commit count.
 
 ## Layout
 | Folder | Contents |

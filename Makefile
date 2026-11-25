@@ -9,8 +9,14 @@ SCHEME  := Wlprz
 # FinderInfo xattrs it stamps make codesign fail with "resource fork ... not allowed".
 DERIVED := $(HOME)/Library/Developer/Xcode/DerivedData/Wlprz-build
 APP     := $(DERIVED)/Build/Products/Debug/Wlprz.app
+# Versioning: the version is MARKETING_VERSION in project.yml (MAJOR.MINOR.PATCH); the
+# build number is the commit count of HEAD. It grows with each commit on main, but a
+# rebase/squash or a shallow clone lowers it, so releases refuse a dirty tree.
+VERSION := $(shell sed -n 's/^ *MARKETING_VERSION: *"\(.*\)"/\1/p' project.yml)
+BUILD   := $(shell git rev-list --count HEAD 2>/dev/null || echo 1)
+XCFLAGS := CURRENT_PROJECT_VERSION=$(BUILD)
 
-.PHONY: all generate build test run icon release clean distclean
+.PHONY: all generate build test run icon release clean distclean version set-version
 
 all: build
 
@@ -22,11 +28,11 @@ generate:
 
 build: generate
 	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug \
-		-derivedDataPath $(DERIVED) build
+		-derivedDataPath $(DERIVED) $(XCFLAGS) build
 
 test: generate
 	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug \
-		-derivedDataPath $(DERIVED) test
+		-derivedDataPath $(DERIVED) $(XCFLAGS) test
 
 run: build
 	@pkill -x Wlprz || true
@@ -36,8 +42,20 @@ icon:
 	swift Scripts/make-appicon.swift Wlprz/Resources/Assets.xcassets/AppIcon.appiconset
 
 release: generate
+	@git diff --quiet HEAD || (echo "release: commit your changes first (build number = HEAD commit count)" && exit 1)
 	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Release \
-		-derivedDataPath $(DERIVED) archive -archivePath build/Wlprz.xcarchive
+		-derivedDataPath $(DERIVED) $(XCFLAGS) archive -archivePath build/Wlprz.xcarchive
+
+version:
+	@echo "Wlprz $(VERSION) ($(BUILD))"
+
+# make set-version V=0.5.1  (semantic version: MAJOR.MINOR.PATCH)
+set-version:
+	@echo "$(V)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || \
+		(echo "usage: make set-version V=MAJOR.MINOR.PATCH, e.g. V=0.5.1" && exit 1)
+	sed -i '' 's/^\( *MARKETING_VERSION: *\)".*"/\1"$(V)"/' project.yml
+	@grep -q 'MARKETING_VERSION: "$(V)"' project.yml || (echo "set-version: project.yml not updated" && exit 1)
+	@$(MAKE) --no-print-directory version
 
 clean:
 	rm -rf build $(DERIVED)

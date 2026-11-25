@@ -57,6 +57,17 @@ struct MenuBarView: View {
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
             }
+            HStack {
+                Text("Wlprz \(AppInfo.version) (\(AppInfo.build))")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                Spacer()
+                Button("About Wlprz") {
+                    openWindow(id: WindowID.about)
+                    NSApp.activate()
+                }
+                .buttonStyle(.link)
+                .font(.caption)
+            }
         }
         .padding(14)
         .frame(width: 320)

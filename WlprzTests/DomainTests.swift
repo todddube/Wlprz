@@ -285,6 +285,16 @@ private struct SeededGenerator: RandomNumberGenerator {
     }
 }
 
+// MARK: - App info
+
+@Suite struct AppInfoTests {
+    @Test func versionIsSemanticAndBuildIsANumber() {
+        #expect(AppInfo.version.wholeMatch(of: /\d+\.\d+\.\d+/) != nil, "got \(AppInfo.version)")
+        #expect(Int(AppInfo.build) != nil, "got \(AppInfo.build)")
+        #expect(AppInfo.repository.absoluteString.hasPrefix("https://github.com/"))
+    }
+}
+
 // MARK: - Coverage
 
 @Suite struct CoverageTests {

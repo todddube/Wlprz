@@ -5,6 +5,7 @@
 //  Composition root: owns the store and engine and exposes the commands the UI calls.
 //
 
+import AppKit
 import Foundation
 import Observation
 import os
@@ -24,6 +25,8 @@ final class AppModel {
     /// Imports currently running, so the UI can show progress.
     private(set) var importsInFlight = 0
 
+    /// Opens a SwiftUI window by id; set by the always-present menu bar label.
+    @ObservationIgnored var windowOpener: ((String) -> Void)?
     @ObservationIgnored private var started = false
     @ObservationIgnored private let log = Logger(subsystem: "com.todddube.Wlprz", category: "App")
 
@@ -43,6 +46,7 @@ final class AppModel {
     func start() {
         guard !started, !Self.isTestHost else { return }
         started = true
+        applyDockIcon(reactivate: false)
         engine.start()
         Task { await measureUnmeasuredMedia() }
     }
@@ -67,6 +71,21 @@ final class AppModel {
         engine.stop()
     }
 
+    /// Opens one of the app's windows (see `WindowID`) and brings the app forward.
+    ///
+    /// The opener comes from the menu bar icon. If macOS never created that icon (e.g. the
+    /// user disallowed it in System Settings → Menu Bar), Settings opens instead: it's a
+    /// scene AppKit can show on its own, and it has the "Show in Dock" switch.
+    func open(_ windowID: String) {
+        NSApp.activate()
+        if let windowOpener {
+            windowOpener(windowID)
+        } else {
+            log.warning("No window opener (menu bar item never shown); opening Settings instead")
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
+    }
+
     // MARK: - Preferences
 
     /// Applies a preference edit and lets the engine react.
@@ -74,7 +93,26 @@ final class AppModel {
         var prefs = store.preferences
         edit(&prefs)
         store.preferences = prefs
+        applyDockIcon(reactivate: true)
         engine.preferencesDidChange()
+    }
+
+    /// A menu bar app has no Dock icon unless the user asks for one.
+    ///
+    /// - Parameter reactivate: after a change made from Settings, re-activate on the next
+    ///   run-loop turn. Changing the policy deactivates the app (the Settings window would
+    ///   drop behind other apps) and a new `.regular` app doesn't show its menu until it's
+    ///   reactivated. Not at launch, where Wlprz shouldn't steal focus.
+    private func applyDockIcon(reactivate: Bool) {
+        let policy: NSApplication.ActivationPolicy = store.preferences.showsDockIcon ? .regular : .accessory
+        guard NSApp.activationPolicy() != policy else { return }
+        if !NSApp.setActivationPolicy(policy) {
+            log.error("Couldn't change the activation policy")
+            return
+        }
+        if reactivate {
+            Task { @MainActor in NSApp.activate() }
+        }
     }
 
     // MARK: - Library commands

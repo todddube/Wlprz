@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  Wlprz · Wlprz
 //
-//  Settings window: General, Playback and Displays tabs.
+//  Settings window: General, Playback, Displays and About tabs.
 //
 
 import SwiftUI
@@ -14,6 +14,7 @@ struct SettingsView: View {
             Tab("General", systemImage: "gearshape") { GeneralSettings() }
             Tab("Playback", systemImage: "play.rectangle") { PlaybackSettings() }
             Tab("Displays", systemImage: "display.2") { DisplaySettings() }
+            Tab("About", systemImage: "info.circle") { AboutView().frame(maxWidth: .infinity) }
         }
         .frame(width: 520)
         .scenePadding()
@@ -49,6 +50,9 @@ private struct GeneralSettings: View {
             if let loginError {
                 Text(loginError).font(.caption).foregroundStyle(.red)
             }
+            Toggle("Show Wlprz in the Dock", isOn: preferenceBinding(model, \.showsDockIcon))
+            Text("Wlprz lives in the menu bar. If your menu bar is crowded, macOS can hide its icon behind the camera notch; a Dock icon is another way in. Opening Wlprz again from Finder or Spotlight also shows the library.")
+                .font(.caption).foregroundStyle(.secondary)
             Toggle("Match the macOS wallpaper and Lock Screen", isOn: preferenceBinding(model, \.syncSystemWallpaper))
             Text("Sets a still frame of each video or image as the system wallpaper, so the Lock Screen and the desktop after quitting match. Scenes leave the system wallpaper unchanged.")
                 .font(.caption).foregroundStyle(.secondary)

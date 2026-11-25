@@ -31,7 +31,10 @@ Update this file as items move. Status key:
 | 2.6 | Shared session pauses only when every display is hidden | ✅ | Engine test |
 | 2.6 | Coverage sampling | ✅ | Grid and CG↔AppKit flip tested |
 | 2.6 | Unload hidden video after 30 s, reload on reveal, never on user pause | ✅ | Engine tests |
-| 2.7 | Menu bar extra | ✅ | Seen running |
+| 2.7 | Menu bar extra (+ version, About item, paused icon) | ✅ | Built; icon may be hidden by Bartender/notch on crowded menu bars |
+| 2.7 | Reopen opens Library; Library Settings button; Show in Dock option | ✅ | Reopen and Settings button verified via accessibility |
+| 2.7 | About window + Settings About tab (version 0.5.0, build, GitHub/README/Issues links) | ✅ | Info.plist values verified in the built app |
+| — | Standardised versioning (`make version` / `set-version`, build = commit count) | ✅ | |
 | 2.7 | Sync macOS wallpaper (still) | ✅ | Video and image on 2 displays; shared still; old copies cleaned. Can't restore an Aerial (SPEC §2.7) |
 | 2.7 | Launch at login | 🟡 | Usually needs the app in /Applications |
 | 2.7 | Audio (mute, volume, one display only) | 🟡 | **W13** |
