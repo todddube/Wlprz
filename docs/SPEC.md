@@ -35,7 +35,10 @@ power management.
 | Scene | Built-in Metal shader (`[[stitchable]]`) | SwiftUI `colorEffect`, driven by `TimelineView` at the policy fps; pointer-reactive |
 
 Every wallpaper has: id, title, kind, tags, favourite flag, motion class
-(Static/Slow/Medium/Dynamic), energy class (Efficient/Balanced/Intensive), date added.
+(Static/Slow/Medium/Dynamic), energy class (Efficient/Balanced/Intensive), date added, and
+for media an aspect ratio (measured on import, rotation applied; older items are measured
+at launch). The ratio gives a **format**: Ultrawide at 2:1 and wider (21:9, 32:9), otherwise
+Standard (16:9, 16:10). Scenes are resolution independent and fit every format.
 
 Built-in scenes (original): Aurora, Nebula Drift, Liquid Orbs, Constellation, Dusk Waves.
 Scenes respond to the pointer (`NSEvent.mouseLocation` sampled per frame, so no
@@ -44,9 +47,9 @@ Accessibility/Input Monitoring permission) and to mouse-down ripples.
 ### 2.2 Library window
 - Sidebar: All, Videos, Images, Scenes, Favourites, then Playlists.
 - Grid of thumbnails (scenes animate live, small, at low fps while hovered), search field matching
-  title and tags, motion filter, sort (Recent / Title).
+  title and tags, motion filter, format filter (Standard / Ultrawide), sort (Recent / Title).
 - Inspector: preview, title, tags, favourite, "Set as wallpaper" (All displays or a
-  specific display), add to playlist, reveal file, delete.
+  specific display), add to playlist, reveal file, delete; shows motion, energy and format.
 - Import: toolbar button, `fileImporter`, or drag and drop onto the window.
 
 ### 2.3 Creator (import pipeline)
@@ -103,7 +106,11 @@ every 2 s and immediately on app activation changes.
   Settings, Quit.
 - **Sync macOS wallpaper** (default on): writes a full-resolution still of the current
   wallpaper and sets it as the system desktop picture for that display → matching Lock
-  Screen and a seamless desktop after quit.
+  Screen and a seamless desktop after quit. One still is extracted per video and shared by
+  every display; each display gets its own uniquely named copy, and older copies are
+  deleted once macOS points at the new one. Scenes leave the system wallpaper alone.
+  *Limitation:* an Aerial or dynamic macOS wallpaper has no public API to set it back, so
+  once sync has replaced one, turning sync off or quitting doesn't restore it.
 - **Launch at login** via `SMAppService.mainApp`.
 - **Audio**: muted by default; optional volume; only one display's player emits sound.
 - **HDR** toggle for EDR video.
@@ -138,7 +145,10 @@ Wlprz/
   Presentation/   LibraryView, InspectorView, CreatorView, PlaylistEditor,
                   MenuBarView, SettingsView
   Intents/        App Intents + AppShortcutsProvider
-WlprzTests/       PlaybackPolicy, PlaylistRotation, persistence round-trip, coverage
+WlprzTests/       Domain: policy, rotation, persistence, format, coverage
+                  Engine: assignment, mirror transitions, Next, cursors, schedule
+                  overrides, shared sessions, unload timing (fake displays + clock
+                  via EngineDependencies; the test host app stays idle)
 docs/TRACKER.md   Feature status and work plan
 ```
 

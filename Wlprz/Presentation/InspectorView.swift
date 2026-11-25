@@ -60,6 +60,7 @@ struct InspectorView: View {
                     LabeledContent("Type") { KindBadge(kind: wallpaper.kind).labelStyle(.titleAndIcon) }
                     LabeledContent("Motion", value: wallpaper.motion.label)
                     LabeledContent("Energy", value: wallpaper.energy.label)
+                    LabeledContent("Format", value: formatDescription)
                     if wallpaper.isScene {
                         LabeledContent("Interactive", value: "Follows the pointer; reacts to clicks")
                     }
@@ -77,6 +78,13 @@ struct InspectorView: View {
         .onAppear(perform: load)
         .onChange(of: wallpaper.id) { load() }
         .onDisappear(perform: save)
+    }
+
+    private var formatDescription: String {
+        guard let ratio = wallpaper.aspectRatio, let format = wallpaper.format else {
+            return wallpaper.isScene ? "Any (resolution independent)" : "Not measured yet"
+        }
+        return "\(format.label) · \(ratio.formatted(.number.precision(.fractionLength(2)))):1"
     }
 
     private func load() {

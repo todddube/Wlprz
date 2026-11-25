@@ -46,6 +46,16 @@ nonisolated struct Wallpaper: Codable, Hashable, Identifiable, Sendable {
         var label: String { rawValue.capitalized }
     }
 
+    /// Screen shape a wallpaper is made for, from its aspect ratio.
+    enum Format: String, Codable, CaseIterable, Sendable {
+        case standard, ultrawide
+
+        var label: String { rawValue.capitalized }
+
+        /// 21:9 is 2.33 and 32:9 is 3.56; 16:9 (1.78) and 16:10 (1.6) are standard.
+        static let ultrawideMinimumRatio = 2.0
+    }
+
     var id: UUID
     var title: String
     var kind: Kind
@@ -54,6 +64,9 @@ nonisolated struct Wallpaper: Codable, Hashable, Identifiable, Sendable {
     var motion: Motion
     var energy: Energy
     var dateAdded: Date
+    /// Width ÷ height of the media, as displayed. `nil` for scenes (they fit any shape) and
+    /// for media not measured yet.
+    var aspectRatio: Double?
 
     init(
         id: UUID = UUID(),
@@ -63,7 +76,8 @@ nonisolated struct Wallpaper: Codable, Hashable, Identifiable, Sendable {
         isFavorite: Bool = false,
         motion: Motion = .slow,
         energy: Energy = .balanced,
-        dateAdded: Date = .now
+        dateAdded: Date = .now,
+        aspectRatio: Double? = nil
     ) {
         self.id = id
         self.title = title
@@ -73,6 +87,18 @@ nonisolated struct Wallpaper: Codable, Hashable, Identifiable, Sendable {
         self.motion = motion
         self.energy = energy
         self.dateAdded = dateAdded
+        self.aspectRatio = aspectRatio
+    }
+
+    /// The format of measured media; `nil` for scenes and for media not measured yet.
+    var format: Format? {
+        aspectRatio.map { $0 >= Format.ultrawideMinimumRatio ? .ultrawide : .standard }
+    }
+
+    /// Whether the wallpaper belongs under a format filter. Scenes match every format, and so
+    /// does unmeasured media, so it stays findable until the launch backfill measures it.
+    func fits(_ format: Format) -> Bool {
+        self.format.map { $0 == format } ?? true
     }
 
     var isScene: Bool {

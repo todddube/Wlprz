@@ -52,6 +52,7 @@ struct LibraryView: View {
     @State private var selection: UUID?
     @State private var query = ""
     @State private var motion: Wallpaper.Motion?
+    @State private var format: Wallpaper.Format?
     @State private var sort = LibrarySort.recent
     @State private var showingImporter = false
     @State private var pickedFile: PickedFile?
@@ -159,6 +160,7 @@ struct LibraryView: View {
             case .playlist: true
             }
             return inSection && wallpaper.matches(query: query) && (motion == nil || wallpaper.motion == motion)
+                && (format.map(wallpaper.fits) ?? true)
         }
         switch sort {
         case .recent: return items.sorted { $0.dateAdded > $1.dateAdded }
@@ -203,6 +205,12 @@ struct LibraryView: View {
                 ForEach(Wallpaper.Motion.allCases, id: \.self) { Text($0.label).tag(Optional($0)) }
             }
             .pickerStyle(.menu)
+            Picker("Format", selection: $format) {
+                Text("Any Format").tag(Wallpaper.Format?.none)
+                ForEach(Wallpaper.Format.allCases, id: \.self) { Text($0.label).tag(Optional($0)) }
+            }
+            .pickerStyle(.menu)
+            .help("Standard (16:9, 16:10) or Ultrawide (21:9 and wider); scenes fit both")
             Picker("Sort", selection: $sort) {
                 ForEach(LibrarySort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }

@@ -27,20 +27,42 @@ final class AppModel {
     @ObservationIgnored private var started = false
     @ObservationIgnored private let log = Logger(subsystem: "com.todddube.Wlprz", category: "App")
 
+    /// `true` when launched as the unit-test host. Tests build their own engines; the host
+    /// must neither draw on the desktop nor read or write the user's real library.
+    static let isTestHost = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     private init() {
-        store = LibraryStore()
+        let folders = Self.isTestHost
+            ? LibraryFolders(root: FileManager.default.temporaryDirectory.appending(path: "WlprzTestHost-\(UUID().uuidString)"))
+            : .standard
+        store = LibraryStore(folders: folders)
         engine = WallpaperEngine(store: store)
     }
 
     /// Starts the engine once; safe to call from both launch and an intent that launched the app.
     func start() {
-        guard !started else { return }
+        guard !started, !Self.isTestHost else { return }
         started = true
         engine.start()
+        Task { await measureUnmeasuredMedia() }
+    }
+
+    /// Fills in the aspect ratio of wallpapers imported before it was recorded, so the
+    /// Standard / Ultrawide filter can place them.
+    private func measureUnmeasuredMedia() async {
+        for wallpaper in store.wallpapers where !wallpaper.isScene && wallpaper.aspectRatio == nil {
+            guard let url = store.mediaURL(for: wallpaper),
+                  let ratio = await MediaImporter.aspectRatio(of: url, isVideo: wallpaper.kind.isAnimated),
+                  var current = store.wallpaper(id: wallpaper.id) // may have changed meanwhile
+            else { continue }
+            current.aspectRatio = ratio
+            store.update(current)
+        }
     }
 
     /// Flushes the pending save and takes the desktop windows down before the app exits.
     func shutdown() {
+        guard !Self.isTestHost else { return }
         store.saveNow()
         engine.stop()
     }

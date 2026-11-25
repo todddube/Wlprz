@@ -7,7 +7,9 @@
 
 import CoreGraphics
 import Foundation
+import ImageIO
 import Testing
+import UniformTypeIdentifiers
 
 @testable import Wlprz
 
@@ -247,6 +249,39 @@ private struct SeededGenerator: RandomNumberGenerator {
         #expect(w.matches(query: "calm"))
         #expect(w.matches(query: "  "))
         #expect(!w.matches(query: "ocean"))
+    }
+}
+
+// MARK: - Format
+
+@Suite struct FormatTests {
+    @Test func ratioDecidesFormatAndScenesFitBoth() {
+        let wide = Wallpaper(title: "w", kind: .image(fileName: "w.png"), aspectRatio: 21.0 / 9)
+        let normal = Wallpaper(title: "n", kind: .video(fileName: "n.mov"), aspectRatio: 16.0 / 9)
+        let scene = Wallpaper(title: "s", kind: .scene(.aurora))
+        #expect(wide.format == .ultrawide && wide.fits(.ultrawide) && !wide.fits(.standard))
+        #expect(normal.format == .standard && normal.fits(.standard) && !normal.fits(.ultrawide))
+        #expect(scene.fits(.standard) && scene.fits(.ultrawide))
+    }
+
+    @Test func oldLibrariesWithoutRatiosStillDecode() throws {
+        let json = #"{"id":"11111111-0000-0000-0000-000000000001","title":"x","kind":{"image":{"fileName":"x.png"}},"tags":[],"isFavorite":false,"motion":"still","energy":"efficient","dateAdded":0}"#
+        let decoded = try JSONDecoder().decode(Wallpaper.self, from: Data(json.utf8))
+        #expect(decoded.aspectRatio == nil)
+    }
+
+    @Test func measuresImageAspectRatio() async throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "wlprz-ratio-\(UUID().uuidString).png")
+        defer { try? FileManager.default.removeItem(at: url) } // temp file
+        let context = try #require(CGContext(data: nil, width: 210, height: 90, bitsPerComponent: 8, bytesPerRow: 0,
+                                             space: CGColorSpaceCreateDeviceRGB(),
+                                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let image = try #require(context.makeImage())
+        let destination = try #require(CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, image, nil)
+        #expect(CGImageDestinationFinalize(destination))
+        let ratio = try #require(await MediaImporter.aspectRatio(of: url, isVideo: false))
+        #expect(abs(ratio - 210.0 / 90) < 0.001)
     }
 }
 

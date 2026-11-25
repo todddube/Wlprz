@@ -44,6 +44,15 @@ struct DisplayInfo: Identifiable, Hashable {
     let frame: CGRect
     let maxFPS: Int
 
+    /// A display described directly; used by tests, which have no real screens to spare.
+    init(id: String, displayID: CGDirectDisplayID = 0, name: String, frame: CGRect, maxFPS: Int = 60) {
+        self.id = id
+        self.displayID = displayID
+        self.name = name
+        self.frame = frame
+        self.maxFPS = maxFPS
+    }
+
     init?(screen: NSScreen) {
         let key = NSDeviceDescriptionKey("NSScreenNumber")
         guard let number = screen.deviceDescription[key] as? NSNumber else { return nil }

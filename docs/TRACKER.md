@@ -1,6 +1,6 @@
 # Wlprz — Feature Tracker
 
-Audit of `docs/SPEC.md` against the code, 2026-11-25.
+Audit of `docs/SPEC.md` against the code. Last updated 2026-11-25.
 Update this file as items move. Status key:
 
 - ✅ **Done**: implemented and verified (unit test, or seen working in the running app)
@@ -14,37 +14,34 @@ Update this file as items move. Status key:
 |---|---|---|---|
 | 2.1 | Scene wallpapers (5 original shaders) | ✅ | Aurora seen on the desktop |
 | 2.1 | Scenes follow pointer / click ripple | 🟡 | Code path exists; not visually checked |
-| 2.1 | Video wallpapers (looping, aspect fill) | ✅ | HEVC 1080p test clip seen playing on the desktop (frame counter advancing) |
-| 2.1 | Image wallpapers | 🟡 | **W1** |
-| 2.1 | Motion + energy classes | ✅ | |
-| 2.2 | Library: sidebar, grid, search, motion filter, sort | 🟡 | Built; UI not exercised |
-| 2.2 | Grid scenes render live at low fps | 🟡 | Animates on hover only (cheaper); spec text to match. **W8** |
-| 2.2 | Inspector: preview, title/tags, favourite, set (all / one display), add to playlist, reveal, delete | 🟡 | |
-| 2.2 | Import via toolbar, fileImporter, drag and drop | 🟡 | **W1** |
-| 2.3 | Creator: title, tags, trim, HEVC optimise, keep audio | 🟡 | **W1** |
-| 2.3 | Creator: export **progress** shown | 🟡 | Percentage bar from `AVAssetExportSession.states`; not yet seen in the UI |
-| 2.4 | Mirror vs per-display, per-display enable | 🟡 | Single display here; multi-display untested |
-| 2.4 | Settings: pick **mirror source / per-display source** | 🟡 | `SourcePicker` in Displays tab |
+| 2.1 | Video wallpapers (looping, aspect fill) | ✅ | HEVC test clip seen looping on the desktop |
+| 2.1 | Image wallpapers | ✅ | 2560×1080 test image seen aspect-filled on the desktop |
+| 2.1 | Motion, energy, aspect ratio / format | ✅ | Format rules and image measurement tested |
+| 2.2 | Library: sidebar, grid, search, motion + format filters, sort | 🟡 | Built; UI not exercised. **W13** |
+| 2.2 | Grid scenes animate live (on hover) | 🟡 | **W13** |
+| 2.2 | Inspector (incl. format) | 🟡 | **W13** |
+| 2.2 | Import via toolbar, fileImporter, drag and drop | 🟡 | **W13** |
+| 2.3 | Creator: title, tags, trim, HEVC optimise, keep audio, % progress | 🟡 | **W13** |
+| 2.4 | Mirror vs per-display, per-display enable | ✅ | Engine tests; mirror seen on 2 real displays |
+| 2.4 | Settings: mirror / per-display source pickers | 🟡 | **W13** |
 | 2.4 | Stable display ids, rebuild on screen change | 🟡 | |
-| 2.5 | Playlists: order, shuffle, interval, schedule | ✅ (domain) / 🟡 (UI) | Rotation logic tested; engine cursors untested. **W5** |
-| 2.5 | "Next" with a *scheduled* playlist | 🟡 | Overrides until the next slot; `nextSlotStart` unit-tested |
-| 2.6 | Policy rules (pause/fps/resolution) | ✅ | 11 unit tests |
-| 2.6 | Memory pressure → cap scenes 30 fps / pause scenes at critical | ✅ | Policy tested; DispatchSource feeds it |
+| 2.5 | Playlists: order, shuffle, interval, schedule | ✅ | Domain + engine tests; editor UI **W13** |
+| 2.5 | "Next" (library, playlist, scheduled override) | ✅ | Engine tests |
+| 2.6 | Policy rules (pause/fps/resolution, Still, memory) | ✅ | 13 policy tests |
+| 2.6 | Shared session pauses only when every display is hidden | ✅ | Engine test |
 | 2.6 | Coverage sampling | ✅ | Grid and CG↔AppKit flip tested |
-| 2.6 | Unload hidden video after 30 s | 🟡 | **W5** |
+| 2.6 | Unload hidden video after 30 s, reload on reveal, never on user pause | ✅ | Engine tests |
 | 2.7 | Menu bar extra | ✅ | Seen running |
-| 2.7 | Sync macOS wallpaper (still) | 🟡 | Needs a video/image wallpaper. **W1** |
+| 2.7 | Sync macOS wallpaper (still) | ✅ | Video and image on 2 displays; shared still; old copies cleaned. Can't restore an Aerial (SPEC §2.7) |
 | 2.7 | Launch at login | 🟡 | Usually needs the app in /Applications |
-| 2.7 | Audio (mute, volume, one display only) | 🟡 | **W1** |
+| 2.7 | Audio (mute, volume, one display only) | 🟡 | **W13** |
 | 2.7 | HDR toggle | 🟡 | |
-| 2.7 | App Intents / Shortcuts | 🟡 | Not run from Shortcuts.app. **W9** |
-| 2.8 | Settings tabs | 🟡 | Source pickers and Desktop motion added |
-| extra | Desktop Motion: **Still** (show a frozen frame, zero cost) | ✅ (policy) / 🟡 (UI) | Playback → Motion |
-| extra | Format filter (Standard / Ultrawide) | ❌ | Low value for a personal library. **W10** |
+| 2.7 | App Intents / Shortcuts | ➖ | Built; Shortcuts.app testing dropped by request |
+| 2.8 | Settings tabs | 🟡 | **W13** |
+| extra | Desktop motion: Still | ✅ | Policy + engine tests (reloads an unloaded video) |
 | extra | Community catalogue, Discover, accounts, licensing | ➖ | |
 | extra | Live animated Lock Screen | ➖ | No public API; still-frame sync instead |
-| — | Engine unit tests (cursors, next, mirror transitions) | ❌ | Needs `DisplayInfo` injection into the engine. **W12** |
-| — | Source control | ❌ | Not a git repo. **W11** (needs your go-ahead) |
+| — | Source control | ✅ | github.com/todddube/Wlprz (private) |
 
 ## 2. Work plan
 
@@ -52,16 +49,16 @@ Priority: P1 = spec gap or unverified core path, P2 = parity / polish, P3 = nice
 
 | ID | P | Work item | Status |
 |---|---|---|---|
-| W1 | P1 | End-to-end smoke test: video playback ☑. Still to do: import through the UI, image, still sync (changes your real wallpaper, so needs your OK), audio | ◐ |
-| W2 | P1 | Settings → Displays: mirror-source picker and per-display source picker (wallpaper or playlist) | ☑ |
-| W3 | P1 | Creator: determinate export progress (`AVAssetExportSession.states`) | ☑ |
-| W4 | P1 | Memory pressure in `SystemConditions` + policy (warning → 30 fps scenes, critical → pause scenes) + tests; spec §2.6 | ☑ |
-| W5 | P1 | Tests: coverage CG↔AppKit flip, slot boundaries, memory/Still policy (30 tests now) | ☑ |
-| W6 | P2 | "Next" on a scheduled playlist: jump to the next slot's wallpaper | ☑ |
-| W7 | P2 | Desktop motion setting: Animated / Still (policy pauses with reason `.motionOff`, no unload) | ☑ |
+| W1 | P1 | End-to-end: video and image playback, macOS wallpaper sync on 2 displays | ☑ |
+| W2 | P1 | Settings → Displays: mirror-source and per-display source pickers | ☑ |
+| W3 | P1 | Creator: determinate export progress | ☑ |
+| W4 | P1 | Memory pressure in the policy | ☑ |
+| W5 | P1 | Domain tests: coverage flip, slot boundaries, memory/Still policy | ☑ |
+| W6 | P2 | "Next" on a scheduled playlist | ☑ |
+| W7 | P2 | Desktop motion: Animated / Still | ☑ |
 | W8 | P3 | Spec text: grid scenes animate on hover | ☑ |
-| W9 | P2 | Run each App Intent from Shortcuts.app | ☐ |
-| W10 | P3 | Store pixel size on import; Standard / Ultrawide filter | ☐ |
-| W11 | P3 | `git init` + first commit (only when asked) | ☐ |
-| W12 | P2 | Engine tests: inject displays + temp `LibraryStore`; cover cursors, Next, mirror→per-display, unload timing | ☐ |
-| W13 | P2 | Manual UI pass: Library, Inspector, Creator (with progress), Playlist editor, Settings source pickers | ☐ |
+| W9 | — | Run each App Intent from Shortcuts.app | dropped |
+| W10 | P3 | Aspect ratio on import + backfill; Standard / Ultrawide filter | ☑ |
+| W11 | P3 | git init + push | ☑ |
+| W12 | P2 | Engine tests via `EngineDependencies` (11 tests) | ☑ |
+| W13 | P2 | Manual UI pass: Library (filters, drag-drop import), Inspector, Creator with progress, Playlist editor, Settings pickers, audio | ☐ |

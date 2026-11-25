@@ -9,6 +9,20 @@ import AppKit
 import Observation
 import os
 
+/// The system state the engine samples on every reconcile and tick: displays, coverage,
+/// power and the clock. Injected so tests can drive `tick()` deterministically; the
+/// notifications and input monitors wired up in `start()` are not covered by this.
+struct EngineDependencies {
+    var displays: () -> [DisplayInfo] = { DisplayInfo.current }
+    var coverage: ([DisplayInfo]) -> [String: Double] = {
+        CoverageSampler.sample(displays: $0, excludingPID: ProcessInfo.processInfo.processIdentifier)
+    }
+    var power: () -> (onBattery: Bool, lowPowerMode: Bool, thermal: SystemConditions.Thermal) = {
+        (PowerState.isOnBattery, ProcessInfo.processInfo.isLowPowerModeEnabled, PowerState.thermal)
+    }
+    var now: () -> Date = { .now }
+}
+
 /// The runtime: one desktop window per enabled display, shared video sessions, playlist
 /// rotation and the power/visibility policy loop.
 @Observable
@@ -24,7 +38,8 @@ final class WallpaperEngine {
 
     @ObservationIgnored private let store: LibraryStore
     @ObservationIgnored private var controllers: [String: DesktopWindowController] = [:]
-    @ObservationIgnored private var videoSessions: [UUID: VideoSession] = [:]
+    /// One session per video wallpaper on screen (readable for tests).
+    @ObservationIgnored private(set) var videoSessions: [UUID: VideoSession] = [:]
     /// When each video session became hidden for a reason that allows unloading it.
     @ObservationIgnored private var hiddenSince: [UUID: Date] = [:]
     /// The in-flight desktop-picture sync per display; a newer wallpaper cancels the older one.
@@ -51,8 +66,11 @@ final class WallpaperEngine {
         var until: Date?
     }
 
-    init(store: LibraryStore) {
+    @ObservationIgnored private let deps: EngineDependencies
+
+    init(store: LibraryStore, dependencies: EngineDependencies = .init()) {
         self.store = store
+        self.deps = dependencies
     }
 
     // MARK: - Lifecycle
@@ -173,7 +191,7 @@ final class WallpaperEngine {
 
     /// Makes windows and sessions match preferences and the connected displays.
     func reconcile() {
-        displays = DisplayInfo.current
+        displays = deps.displays()
         let prefs = store.preferences
         let library = Dictionary(store.wallpapers.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var resolved: [String: UUID] = [:]
@@ -256,7 +274,7 @@ final class WallpaperEngine {
                 return cursor.wallpaper
             }
             guard let first = PlaylistRotation.next(in: playlist, after: nil, available: available) else { return nil }
-            cursors[context] = Cursor(playlist: playlistID, wallpaper: first, changed: .now)
+            cursors[context] = Cursor(playlist: playlistID, wallpaper: first, changed: deps.now())
             return first
         }
     }
@@ -264,37 +282,38 @@ final class WallpaperEngine {
     /// The schedule's wallpaper, unless a manual "Next" overrides it until the next slot.
     private func scheduledWallpaper(_ playlist: Playlist, context: String, available: Set<UUID>) -> UUID? {
         if let cursor = cursors[context], cursor.playlist == playlist.id,
-           let until = cursor.until, until > .now, available.contains(cursor.wallpaper) {
+           let until = cursor.until, until > deps.now(), available.contains(cursor.wallpaper) {
             return cursor.wallpaper
         }
-        return PlaylistRotation.scheduled(in: playlist, at: .now, available: available)
+        return PlaylistRotation.scheduled(in: playlist, at: deps.now(), available: available)
     }
 
     private func advance(context: String, playlistID: UUID, force: Bool) {
         guard let playlist = store.playlist(id: playlistID) else { return }
         if playlist.usesSchedule {
             // Timed changes come from the schedule itself; only a manual "Next" overrides it.
-            guard force, let until = PlaylistRotation.nextSlotStart(in: playlist, after: .now, available: store.availableIDs) else { return }
+            guard force, let until = PlaylistRotation.nextSlotStart(in: playlist, after: deps.now(), available: store.availableIDs) else { return }
             let available = store.availableIDs
             let current = scheduledWallpaper(playlist, context: context, available: available)
             var unscheduled = playlist
             unscheduled.schedule = []
             guard let next = PlaylistRotation.next(in: unscheduled, after: current, available: available) else { return }
-            cursors[context] = Cursor(playlist: playlistID, wallpaper: next, changed: .now, until: until)
+            cursors[context] = Cursor(playlist: playlistID, wallpaper: next, changed: deps.now(), until: until)
             return
         }
         let current = cursors[context]?.playlist == playlistID ? cursors[context]?.wallpaper : nil
         if !force, let changed = cursors[context]?.changed,
-           playlist.intervalMinutes <= 0 || Date.now.timeIntervalSince(changed) < Double(playlist.intervalMinutes) * 60 {
+           playlist.intervalMinutes <= 0 || deps.now().timeIntervalSince(changed) < Double(playlist.intervalMinutes) * 60 {
             return
         }
         guard let next = PlaylistRotation.next(in: playlist, after: current, available: store.availableIDs) else { return }
-        cursors[context] = Cursor(playlist: playlistID, wallpaper: next, changed: .now)
+        cursors[context] = Cursor(playlist: playlistID, wallpaper: next, changed: deps.now())
     }
 
     // MARK: - Policy
 
-    private func tick() {
+    /// One policy-loop step: sample conditions, rotate playlists, apply the policy.
+    func tick() {
         refreshConditions()
         rotatePlaylists()
         applyPolicy()
@@ -321,10 +340,11 @@ final class WallpaperEngine {
     }
 
     private func refreshConditions() {
-        conditions.onBattery = PowerState.isOnBattery
-        conditions.lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
-        conditions.thermal = PowerState.thermal
-        coverage = CoverageSampler.sample(displays: displays, excludingPID: ProcessInfo.processInfo.processIdentifier)
+        let power = deps.power()
+        conditions.onBattery = power.onBattery
+        conditions.lowPowerMode = power.lowPowerMode
+        conditions.thermal = power.thermal
+        coverage = deps.coverage(displays)
     }
 
     /// Runs the policy for every session and pushes the result to players and scene views.
@@ -383,9 +403,9 @@ final class WallpaperEngine {
                 hiddenSince[id] = nil
                 return
             }
-            let hidden = hiddenSince[id] ?? .now
+            let hidden = hiddenSince[id] ?? deps.now()
             hiddenSince[id] = hidden
-            if Date.now.timeIntervalSince(hidden) >= Self.unloadDelay { session.unload() }
+            if deps.now().timeIntervalSince(hidden) >= Self.unloadDelay { session.unload() }
         }
     }
 

@@ -91,13 +91,18 @@ nonisolated enum MediaImporter {
             throw ImportError.unsupportedType(ext)
         }
 
+        var ratio: Double?
+        if let stored = kind.fileName.map({ folders.media.appending(path: $0) }) {
+            ratio = await aspectRatio(of: stored, isVideo: kind.isAnimated)
+        }
         let wallpaper = Wallpaper(
             id: id,
             title: options.title.isEmpty ? source.deletingPathExtension().lastPathComponent : options.title,
             kind: kind,
             tags: options.tags,
             motion: kind.isAnimated ? options.motion : .still,
-            energy: kind.isAnimated ? .balanced : .efficient
+            energy: kind.isAnimated ? .balanced : .efficient,
+            aspectRatio: ratio
         )
         if let media = kind.fileName.map({ folders.media.appending(path: $0) }) {
             // A missing thumbnail only degrades the grid; the import itself succeeded.
@@ -105,6 +110,30 @@ nonisolated enum MediaImporter {
                                                   to: folders.thumbnails.appending(path: "\(id.uuidString).jpg"))
         }
         return wallpaper
+    }
+
+    /// Width ÷ height as displayed (rotation applied), or `nil` if the file can't be read.
+    @concurrent
+    static func aspectRatio(of url: URL, isVideo: Bool) async -> Double? {
+        if isVideo {
+            guard let track = try? await AVURLAsset(url: url).loadTracks(withMediaType: .video).first,
+                  let (size, transform) = try? await track.load(.naturalSize, .preferredTransform)
+            else { return nil } // unreadable: leave unmeasured
+            let shown = size.applying(transform)
+            return ratio(abs(shown.width), abs(shown.height))
+        }
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = props[kCGImagePropertyPixelWidth] as? Double,
+              let height = props[kCGImagePropertyPixelHeight] as? Double
+        else { return nil } // unreadable: leave unmeasured
+        // EXIF orientations 5–8 are rotated a quarter turn, which swaps the sides.
+        let rotated = ((props[kCGImagePropertyOrientation] as? Int) ?? 1) >= 5
+        return rotated ? ratio(height, width) : ratio(width, height)
+    }
+
+    private static func ratio(_ width: Double, _ height: Double) -> Double? {
+        height > 0 && width > 0 ? width / height : nil
     }
 
     /// Copies a file off the main actor (images can be tens of megabytes).
