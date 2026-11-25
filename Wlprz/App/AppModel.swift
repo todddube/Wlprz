@@ -88,7 +88,7 @@ final class AppModel {
     /// Imports one file through the Creator pipeline.
     @discardableResult
     func importMedia(
-        from url: URL, options: ImportOptions, progress: (@Sendable (Double) -> Void)? = nil
+        from url: URL, options: ImportOptions, progress: (@MainActor @Sendable (Double) -> Void)? = nil
     ) async -> Wallpaper? {
         importsInFlight += 1
         defer { importsInFlight -= 1 }

@@ -81,9 +81,16 @@ nonisolated enum PlaylistRotation {
     }
 
     /// When the slot active at `date` ends: the next slot start later today, or the first
-    /// slot tomorrow. `nil` for an unscheduled playlist.
-    static func nextSlotStart(in playlist: Playlist, after date: Date, calendar: Calendar = .current) -> Date? {
-        let starts = Set(playlist.schedule.map(\.startMinute)).sorted()
+    /// slot tomorrow. Like ``scheduled(in:at:calendar:available:)``, it ignores slots whose
+    /// wallpaper is gone and slots that don't change the wallpaper. `nil` if unscheduled.
+    static func nextSlotStart(
+        in playlist: Playlist, after date: Date, calendar: Calendar = .current, available: Set<UUID>
+    ) -> Date? {
+        let slots = playlist.schedule.filter { available.contains($0.wallpaperID) }.sorted { $0.startMinute < $1.startMinute }
+        // A slot is a real boundary only when its wallpaper differs from the one before it (cyclically).
+        let starts = slots.indices.filter { i in
+            slots[i].wallpaperID != slots[(i + slots.count - 1) % slots.count].wallpaperID
+        }.map { slots[$0].startMinute }
         guard let first = starts.first else { return nil }
         let parts = calendar.dateComponents([.hour, .minute], from: date)
         let minute = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)

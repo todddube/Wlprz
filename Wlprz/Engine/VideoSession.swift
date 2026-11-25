@@ -41,6 +41,12 @@ final class VideoSession {
 
     func pause() { player.pause() }
 
+    /// Paused but visible: reloads an unloaded session so the layer shows a frame, not black.
+    func prepareStill() {
+        player.pause()
+        if isUnloaded { load() }
+    }
+
     /// Drops decoded frames and buffers after the wallpaper has been hidden for a while.
     func unload() {
         guard !isUnloaded else { return }

@@ -274,7 +274,7 @@ final class WallpaperEngine {
         guard let playlist = store.playlist(id: playlistID) else { return }
         if playlist.usesSchedule {
             // Timed changes come from the schedule itself; only a manual "Next" overrides it.
-            guard force, let until = PlaylistRotation.nextSlotStart(in: playlist, after: .now) else { return }
+            guard force, let until = PlaylistRotation.nextSlotStart(in: playlist, after: .now, available: store.availableIDs) else { return }
             let available = store.availableIDs
             let current = scheduledWallpaper(playlist, context: context, available: available)
             var unscheduled = playlist
@@ -378,6 +378,8 @@ final class WallpaperEngine {
             // Free decoder memory only for "nobody can see it" reasons; a user pause should
             // resume instantly, and time spent user-paused must not count towards the delay.
             guard [.fullScreen, .covered, .asleep, .locked].contains(reason) else {
+                // Visible but held (Still, user pause, power rules): show a frame, not black.
+                session.prepareStill()
                 hiddenSince[id] = nil
                 return
             }

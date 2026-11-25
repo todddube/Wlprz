@@ -66,7 +66,7 @@ nonisolated enum MediaImporter {
     @concurrent
     static func importMedia(
         from source: URL, options: ImportOptions, folders: LibraryFolders,
-        progress: (@Sendable (Double) -> Void)? = nil
+        progress: (@MainActor @Sendable (Double) -> Void)? = nil
     ) async throws -> Wallpaper {
         let id = UUID()
         let ext = source.pathExtension.lowercased()
@@ -116,7 +116,7 @@ nonisolated enum MediaImporter {
     @concurrent
     private static func exportHEVC(
         from source: URL, to destination: URL, options: ImportOptions,
-        progress: (@Sendable (Double) -> Void)?
+        progress: (@MainActor @Sendable (Double) -> Void)?
     ) async throws {
         let asset = AVURLAsset(url: source)
         let duration = try await asset.load(.duration)
@@ -141,19 +141,20 @@ nonisolated enum MediaImporter {
         guard let session = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHEVCHighestQuality) else {
             throw ImportError.exportFailed("HEVC export isn't available on this Mac.")
         }
-        // Report progress alongside the export; the monitor ends when the export does.
-        // `export(to:as:)` and `states(updateInterval:)` are designed to be used concurrently
-        // on one session, but the SDK doesn't mark the class Sendable.
-        nonisolated(unsafe) let observed = session
+        // The states sequence is Sendable, so only it (not the session) crosses into the
+        // monitor. It finishes when the export does; awaiting it means no late updates.
+        let states = session.states(updateInterval: 0.25)
         let monitor = Task {
-            for await state in observed.states(updateInterval: 0.25) {
-                if case .exporting(let p) = state { progress?(p.fractionCompleted) }
+            for await state in states {
+                if case .exporting(let p) = state { await progress?(p.fractionCompleted) }
             }
         }
-        defer { monitor.cancel() }
         do {
             try await session.export(to: destination, as: .mov)
+            await monitor.value
         } catch {
+            monitor.cancel()
+            await monitor.value
             try? FileManager.default.removeItem(at: destination) // remove a partial file if one was written
             throw ImportError.exportFailed(error.localizedDescription)
         }

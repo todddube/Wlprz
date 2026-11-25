@@ -169,10 +169,22 @@ private struct SeededGenerator: RandomNumberGenerator {
         let plain = Playlist(name: "x", wallpaperIDs: [a, b])
         var p = plain
         p.schedule = [.init(startMinute: 8 * 60, wallpaperID: a), .init(startMinute: 20 * 60, wallpaperID: b)]
-        #expect(PlaylistRotation.nextSlotStart(in: p, after: at(9), calendar: calendar) == at(20))
+        let all: Set = [a, b, c]
+        #expect(PlaylistRotation.nextSlotStart(in: p, after: at(9), calendar: calendar, available: all) == at(20))
         let tomorrow8 = calendar.date(byAdding: .day, value: 1, to: at(8))
-        #expect(PlaylistRotation.nextSlotStart(in: p, after: at(21), calendar: calendar) == tomorrow8)
-        #expect(PlaylistRotation.nextSlotStart(in: plain, after: at(9), calendar: calendar) == nil)
+        #expect(PlaylistRotation.nextSlotStart(in: p, after: at(21), calendar: calendar, available: all) == tomorrow8)
+        #expect(PlaylistRotation.nextSlotStart(in: plain, after: at(9), calendar: calendar, available: all) == nil)
+        // At exactly a slot's start that slot is active, so the boundary is the following one.
+        #expect(PlaylistRotation.scheduled(in: p, at: at(20), calendar: calendar, available: all) == b)
+        #expect(PlaylistRotation.nextSlotStart(in: p, after: at(20), calendar: calendar, available: all) == tomorrow8)
+    }
+
+    @Test func nextSlotStartSkipsDeletedAndRepeatedSlots() {
+        var p = Playlist(name: "x", wallpaperIDs: [a, b, c])
+        p.schedule = [.init(startMinute: 8 * 60, wallpaperID: a), .init(startMinute: 12 * 60, wallpaperID: c),
+                      .init(startMinute: 16 * 60, wallpaperID: a), .init(startMinute: 20 * 60, wallpaperID: b)]
+        // c deleted: 12:00 is gone and 16:00 repeats a, so from 9:00 the next change is 20:00.
+        #expect(PlaylistRotation.nextSlotStart(in: p, after: at(9), calendar: calendar, available: [a, b]) == at(20))
     }
 
     @Test func scheduleWrapsPastMidnight() {
@@ -212,6 +224,7 @@ private struct SeededGenerator: RandomNumberGenerator {
         let decoded = try JSONDecoder().decode(LibraryDocument.self, from: Data(#"{"preferences":{"pauseOnBattery":true}}"#.utf8))
         #expect(decoded.preferences.pauseOnBattery)
         #expect(decoded.preferences.performance == .automatic)
+        #expect(decoded.preferences.desktopMotion == .animated)
         #expect(decoded.allWallpapers.count == SceneID.allCases.count)
     }
 

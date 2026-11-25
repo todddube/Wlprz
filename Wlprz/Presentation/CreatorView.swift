@@ -149,10 +149,7 @@ struct CreatorView: View {
             optimize: optimize,
             dropAudio: !keepAudio
         )
-        let report: @Sendable (Double) -> Void = { value in
-            Task { @MainActor in exportProgress = value }
-        }
-        if let wallpaper = await model.importMedia(from: source, options: options, progress: report) {
+        if let wallpaper = await model.importMedia(from: source, options: options, progress: { exportProgress = $0 }) {
             // A copy can't be interrupted mid-file; if the user cancelled meanwhile, undo it.
             if Task.isCancelled {
                 model.delete(wallpaper.id)

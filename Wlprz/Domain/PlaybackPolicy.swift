@@ -2,7 +2,7 @@
 //  PlaybackPolicy.swift
 //  Wlprz · Wlprz
 //
-//  Decides whether each wallpaper may play, and how fast, from power and visibility state.
+//  Decides whether each wallpaper may play, and how fast, from power, memory and visibility.
 //
 
 import Foundation

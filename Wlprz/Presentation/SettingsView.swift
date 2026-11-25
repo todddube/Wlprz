@@ -130,7 +130,9 @@ private struct DisplaySettings: View {
                     if !prefs.mirrorsDisplays {
                         SourcePicker(title: "Wallpaper",
                                      selection: prefs.config(forDisplay: display.id).source ?? prefs.mirrorSource) {
-                            model.engine.show($0, onDisplay: display.id)
+                            // Only the source changes; the enable toggle above stays the user's choice.
+                            let source = $0
+                            model.updatePreferences { $0.displays[display.id, default: DisplayConfig()].source = source }
                         }
                     }
                     LabeledContent("Showing", value: model.status(forDisplay: display.id))
