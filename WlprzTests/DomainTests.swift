@@ -203,6 +203,12 @@ private struct SeededGenerator: RandomNumberGenerator {
 // MARK: - Model and persistence
 
 @Suite struct LibraryDocumentTests {
+    @Test func sceneMetalIndicesAreUniqueAndInRange() {
+        let indices = SceneID.allCases.map(\.metalIndex)
+        #expect(Set(indices).count == SceneID.allCases.count)
+        #expect(indices.allSatisfy { (0..<Int32(SceneID.allCases.count)).contains($0) })
+    }
+
     @Test func builtInScenesHaveStableUniqueIDs() {
         let ids = BuiltInScenes.all.map(\.id)
         #expect(Set(ids).count == SceneID.allCases.count)

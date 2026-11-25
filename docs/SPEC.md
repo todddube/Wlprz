@@ -32,7 +32,7 @@ power management.
 |---|---|---|
 | Video | User file (mov/mp4/m4v/HEVC/ProRes) copied into the library | `AVQueuePlayer` + `AVPlayerLooper`, seamless loop, aspect-fill `AVPlayerLayer` |
 | Image | User file (heic/jpg/png/tiff) | Aspect-fill layer, static (zero CPU when shown) |
-| Scene | Built-in Metal shader (`[[stitchable]]`) | SwiftUI `colorEffect`, driven by `TimelineView` at the policy fps; pointer-reactive |
+| Scene | Built-in Metal shader | Desktop: own Metal pipeline (`SceneMetalView`, one full-screen fragment pass into a `CAMetalLayer`) at the policy fps and a reduced render resolution; pointer-reactive. Thumbnails: the same shader via SwiftUI `colorEffect` |
 
 Every wallpaper has: id, title, kind, tags, favourite flag, motion class
 (Static/Slow/Medium/Dynamic), energy class (Efficient/Balanced/Intensive), date added, and
@@ -41,6 +41,22 @@ at launch). The ratio gives a **format**: Ultrawide at 2:1 and wider (21:9, 32:9
 Standard (16:9, 16:10). Scenes are resolution independent and fit every format.
 
 Built-in scenes (original): Aurora, Nebula Drift, Liquid Orbs, Constellation, Dusk Waves.
+
+**Scene rendering budget.** Each scene renders at a fixed fraction of native pixels
+(`SceneID.renderDetail`: 0.3–0.5) and the layer upscales smoothly; the scenes are soft, so
+native Retina pixels only multiply GPU work. Efficient halves that again. Target: under
+~4 ms of GPU per frame per display at 30 fps. Measured on two 6016×3384 displays:
+
+| Scene | Native, SwiftUI path (before) | Automatic | Efficient |
+|---|---|---|---|
+| Aurora | 55.5 ms | 3.1 ms | 1.1 ms |
+| Nebula Drift | 50.0 ms | 2.3 ms | 0.8 ms |
+| Liquid Orbs | 14.5 ms | 3.9 ms | 0.7 ms |
+| Constellation | 47.7 ms | ~4.0 ms | 1.9 ms |
+| Dusk Waves | 11.9 ms | 3.4 ms | 0.9 ms |
+
+System GPU with Nebula on both displays: 90 % → 29 % (14–27 % with Wlprz quit); memory
+614 MB → 108 MB. Debug builds log real fps and GPU ms/frame (log category `SceneFPS`).
 Scenes respond to the pointer (`NSEvent.mouseLocation` sampled per frame, so no
 Accessibility/Input Monitoring permission) and to mouse-down ripples.
 
@@ -149,7 +165,8 @@ Wlprz/
                   Thumbnailer, PowerMonitor, CoverageMonitor, DisplayIdentity,
                   SystemWallpaperSync, LaunchAtLogin
   Engine/         WallpaperEngine (sessions, windows, policy loop), DesktopWindow,
-                  VideoSession, SceneView, shaders (Scenes.metal)
+                  VideoSession, SceneMetalView (desktop scenes), SceneView
+                  (thumbnails, fallback), shaders (Scenes.metal)
   Presentation/   LibraryView, InspectorView, CreatorView, PlaylistEditor,
                   MenuBarView, SettingsView
   Intents/        App Intents + AppShortcutsProvider

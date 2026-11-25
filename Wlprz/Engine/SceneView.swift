@@ -19,7 +19,10 @@ final class SceneRenderState {
     var screenFrame: CGRect?
 }
 
-/// A shader scene that follows the pointer.
+/// A shader scene that follows the pointer, drawn through SwiftUI's `colorEffect`.
+///
+/// Used for library thumbnails, and on the desktop only when Metal is unavailable
+/// (``SceneMetalView`` is far cheaper there).
 ///
 /// The pointer is read from `NSEvent.mouseLocation` each frame instead of from events:
 /// desktop windows ignore the mouse, and polling needs no Input Monitoring permission.

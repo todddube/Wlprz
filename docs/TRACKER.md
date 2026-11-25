@@ -41,6 +41,7 @@ Update this file as items move. Status key:
 | 2.7 | HDR toggle | 🟡 | |
 | 2.7 | App Intents / Shortcuts | ➖ | Built; Shortcuts.app testing dropped by request |
 | 2.8 | Settings tabs | 🟡 | **W13** |
+| 2.1 | Scene GPU budget (own Metal pipeline, per-scene render detail) | ✅ | 90 % → 29 % system GPU, 614 → 108 MB; see SPEC §2.1 |
 | extra | Desktop motion: Still | ✅ | Policy + engine tests (reloads an unloaded video) |
 | extra | Community catalogue, Discover, accounts, licensing | ➖ | |
 | extra | Live animated Lock Screen | ➖ | No public API; still-frame sync instead |

@@ -118,4 +118,34 @@ nonisolated struct Wallpaper: Codable, Hashable, Identifiable, Sendable {
 /// Identifies one of the shader scenes compiled into the app.
 nonisolated enum SceneID: String, Codable, CaseIterable, Sendable {
     case aurora, nebula, orbs, constellation, duskWaves
+
+    /// The `switch (u.scene)` case in `sceneFragment` (Scenes.metal). Explicit, so
+    /// reordering the cases can't silently draw the wrong scene.
+    var metalIndex: Int32 {
+        switch self {
+        case .aurora: 0
+        case .nebula: 1
+        case .orbs: 2
+        case .constellation: 3
+        case .duskWaves: 4
+        }
+    }
+
+    /// The fraction of the display's native pixels the desktop renders this scene at,
+    /// before the policy's resolution scale (Efficient halves it). The layer upscales with
+    /// smooth filtering.
+    ///
+    /// The scenes are soft gradients and noise, so native Retina resolution only multiplies
+    /// GPU work: at 6016×3384 the noise scenes took ~50 ms of GPU per frame per display,
+    /// over the whole 33 ms budget of a 30 fps frame. Scenes with fine, crisp detail (star
+    /// points, wave edges) keep more pixels.
+    var renderDetail: Double {
+        switch self {
+        case .aurora: 0.35
+        case .nebula: 0.3
+        case .orbs: 0.5
+        case .constellation: 0.42
+        case .duskWaves: 0.5
+        }
+    }
 }

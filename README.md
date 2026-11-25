@@ -35,7 +35,8 @@ See [docs/SPEC.md](docs/SPEC.md) for the full spec and design principles, and
   on battery or in Low Power Mode (optional), and while asleep or locked. Throttles scenes
   when warm, under memory pressure or mostly covered. Frees hidden video memory after 30 s.
   The menu bar always says why playback is paused.
-- **Performance modes:** Automatic, Maximum, Efficient.
+- **Performance modes:** Automatic, Maximum, Efficient. Scenes are drawn by Wlprz's own
+  Metal pipeline at a reduced internal resolution: a few milliseconds of GPU per frame.
 - **Lock Screen match:** keeps the macOS wallpaper set to a still of what's playing, so the
   Lock Screen and the desktop after quitting match.
 - **Menu bar** controls, **Shortcuts** actions, launch at login, audio and HDR toggles.

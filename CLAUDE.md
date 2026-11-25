@@ -13,8 +13,9 @@ The spec is `docs/SPEC.md` and feature status is `docs/TRACKER.md`. Keep both cu
 - `Infrastructure/`: persistence (`LibraryStore`, one JSON doc in Application Support),
   import/thumbnail pipeline, power/coverage sampling, system wallpaper sync.
 - `Engine/`: `WallpaperEngine` reconciles displays → desktop windows and shared
-  `VideoSession`s, ticks every 2 s, applies the policy. Scenes are `[[stitchable]]` shaders in
-  `Scenes.metal` used via SwiftUI `colorEffect`.
+  `VideoSession`s, ticks every 2 s, applies the policy. Scene bodies live in `Scenes.metal`: the desktop
+  draws them with its own Metal pipeline (`SceneMetalView`, `sceneFragment`), thumbnails via
+  `[[stitchable]]` wrappers and SwiftUI `colorEffect`. `SceneUniforms` must match in both files.
 - `Presentation/`, `Intents/`: SwiftUI UI and App Intents (via `AppModel.shared`).
 
 ## Invariants

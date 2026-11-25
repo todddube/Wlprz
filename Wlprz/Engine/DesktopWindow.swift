@@ -86,7 +86,9 @@ final class DesktopWindowController {
             view.layer?.contents = NSImage(contentsOf: url)
             window.contentView = view
         case .scene(let scene):
-            window.contentView = NSHostingView(rootView: SceneView(scene: scene, state: sceneState))
+            // The dedicated Metal view; SwiftUI's shader path only if Metal is unavailable.
+            window.contentView = SceneMetalView(scene: scene, state: sceneState)
+                ?? NSHostingView(rootView: SceneView(scene: scene, state: sceneState))
         }
         window.orderFront(nil)
     }
