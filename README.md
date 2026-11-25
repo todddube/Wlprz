@@ -71,3 +71,6 @@ git commit count.
 | `Wlprz/Engine` | `WallpaperEngine`, desktop windows, shared video sessions, shader scenes |
 | `Wlprz/Presentation`, `Wlprz/Intents` | SwiftUI windows and App Intents |
 | `docs/` | `SPEC.md` (spec) and `TRACKER.md` (feature status) |
+
+## License
+MIT. See [LICENSE](LICENSE).
